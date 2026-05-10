@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Itineraries", href: "/itineraries", icon: Map },
+  { name: "My Trips", href: "/my-trips", icon: Map },
   { name: "Journal", href: "/journal", icon: BookOpen },
   { name: "Expenses", href: "/expenses", icon: Banknote },
   { name: "Settings", href: "/settings", icon: Settings },

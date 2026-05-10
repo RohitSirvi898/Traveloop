@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search, Bell } from "lucide-react";
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { TripCard } from "@/components/TripCard";
 import { Button } from "@/components/ui/button";
 
@@ -112,11 +112,10 @@ export default function MyTrips() {
                     key={filter.value}
                     onClick={() => setActiveFilter(filter.value as FilterType)}
                     variant={activeFilter === filter.value ? "default" : "outline"}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      activeFilter === filter.value
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeFilter === filter.value
                         ? "bg-teal-600 text-white"
                         : "text-slate-700 dark:text-slate-300"
-                    }`}
+                      }`}
                   >
                     {filter.label}
                   </Button>
