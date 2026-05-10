@@ -7,6 +7,7 @@ export async function getFullItinerary(tripId: string) {
   try {
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
+    if (!tripId) throw new Error("Missing trip ID");
 
     const itinerary = await prisma.trip.findUnique({
       where: { id: tripId },
