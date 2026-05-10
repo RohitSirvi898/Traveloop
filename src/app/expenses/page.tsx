@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, MoreVertical, Bell, User } from "lucide-react";
+import { Download, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BudgetCategory {
@@ -141,15 +141,7 @@ export default function Expenses() {
             West India Expedition: Oct 12 - Oct 25
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <button className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-            <Bell size={20} />
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
-          </button>
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:shadow-md transition-shadow">
-            <User size={18} />
-          </div>
-        </div>
+        <div></div>
       </div>
 
       {/* Main Content */}

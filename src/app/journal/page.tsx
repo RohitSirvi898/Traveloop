@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Bell, Trash2, Edit2, Plus, X } from "lucide-react";
+import { Search, Trash2, Edit2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Note {
@@ -198,9 +198,7 @@ export default function Journal() {
               Write and save notes or reminders tied to your trips
             </p>
           </div>
-          <button className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
-            <Bell size={20} />
-          </button>
+
         </header>
 
         {/* Content Area */}

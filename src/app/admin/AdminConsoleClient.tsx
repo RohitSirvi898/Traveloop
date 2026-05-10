@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-	Bell,
+
 	Download,
 	Filter,
 	Users,
@@ -270,7 +270,7 @@ export default function AdminConsoleClient({ currentUserId }: AdminConsoleClient
 					</div>
 					<div className="flex items-center gap-3">
 						<button className="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
-							<Bell size={20} />
+
 						</button>
 						<Button variant="outline" className="border-slate-300 text-slate-700">
 							<Download className="w-4 h-4 mr-2" />

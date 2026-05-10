@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Search, MapPin, Calendar, Star, Plus, Wallet, Bell, UserCircle } from "lucide-react";
+import { Search, MapPin, Calendar, Star, Plus, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
@@ -17,14 +17,7 @@ export default function Dashboard() {
             className="w-full pl-11 pr-4 bg-[#F8F9FA] border border-transparent focus:bg-white focus:border-[#2AB5A0] focus:ring-1 focus:ring-[#2AB5A0] rounded-full h-11 text-sm outline-none transition-all"
           />
         </div>
-        <div className="flex items-center gap-4">
-          <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-50 text-gray-500 transition-colors">
-            <Bell className="w-5 h-5" />
-          </button>
-          <div className="w-10 h-10 rounded-full bg-[#E6F4F2] text-[#2AB5A0] flex items-center justify-center font-semibold border border-[#2AB5A0]/20">
-            A
-          </div>
-        </div>
+        <div></div>
       </header>
 
       {/* Main Content */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Bell } from "lucide-react";
+import { Search } from "lucide-react";
 import { TripCard } from "@/components/TripCard";
 import { Button } from "@/components/ui/button";
 
@@ -72,9 +72,7 @@ export default function MyTrips() {
             Manage your upcoming adventures and relive past memories.
           </p>
         </div>
-        <button className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
-          <Bell size={20} />
-        </button>
+
       </header>
 
       {/* Content Area */}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus, LayoutDashboard, Map, BookOpen, Banknote, Settings } from "lucide-react";
+import { Plus, LayoutDashboard, Map, BookOpen, Banknote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +11,6 @@ const navItems = [
   { name: "My Trips", href: "/my-trips", icon: Map },
   { name: "Journal", href: "/journal", icon: BookOpen },
   { name: "Expenses", href: "/expenses", icon: Banknote },
-  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
