@@ -13,7 +13,6 @@ import {
 	Search,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 
 type AdminUser = {
@@ -261,10 +260,7 @@ export default function AdminConsoleClient({ currentUserId }: AdminConsoleClient
 	const maxTrips = Math.max(...monthlyTrips);
 
 	return (
-		<div className="flex h-screen bg-slate-50">
-			<Sidebar />
-
-			<main className="flex-1 ml-40 flex flex-col overflow-hidden">
+		<main className="flex-1 flex flex-col overflow-hidden">
 				<header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
 					<div>
 						<h1 className="text-2xl font-bold text-slate-900">Admin Console</h1>
@@ -526,6 +522,5 @@ export default function AdminConsoleClient({ currentUserId }: AdminConsoleClient
 					</section>
 				</div>
 			</main>
-		</div>
 	);
 }

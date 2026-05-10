@@ -4,6 +4,8 @@ import "./globals.css";
 import { ClerkProvider, Show } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SidebarWrapper } from "@/components/layout/SidebarWrapper";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -21,7 +23,7 @@ export default function RootLayout({
       <html lang="en">
         <body className={`${inter.className} bg-white flex min-h-screen text-gray-900`}>
           <Show when="signed-in">
-            <Sidebar />
+            <SidebarWrapper />
           </Show>
           <main className="flex-1 min-h-screen overflow-y-auto">
             {children}
