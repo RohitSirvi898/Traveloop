@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Search, Bell, Trash2, Edit2, Plus, X } from "lucide-react";
-import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 
 interface Note {
@@ -19,7 +18,7 @@ interface Trip {
   title: string;
 }
 
-export default function Documents() {
+export default function Journal() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -190,16 +189,11 @@ export default function Documents() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Main Content */}
-      <main className="flex-1 ml-40 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Documents</h1>
+    <div className="w-full h-full flex flex-col bg-slate-50 dark:bg-slate-950">
+      {/* Header */}
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Journal</h1>
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Write and save notes or reminders tied to your trips
             </p>
@@ -327,7 +321,6 @@ export default function Documents() {
             )}
           </div>
         </div>
-      </main>
 
       {/* Add/Edit Note Modal */}
       {isModalOpen && (
