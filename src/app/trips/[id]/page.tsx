@@ -1,51 +1,64 @@
-import { getFullItinerary } from "@/lib/actions";
-import { format } from "date-fns";
+import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/database/prisma/client";
+import type { Metadata } from "next";
+import ItineraryViewerClient from "./ItineraryViewerClient";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const trip = await prisma.trip.findUnique({
+      where: { id },
+      select: { title: true, description: true },
+    });
+    if (!trip) return { title: "Trip Not Found – Traveloop" };
+    return {
+      title: `${trip.title} – Itinerary | Traveloop`,
+      description: trip.description ?? `View the full day-by-day itinerary for ${trip.title}.`,
+    };
+  } catch {
+    return { title: "Itinerary | Traveloop" };
+  }
+}
 
 export default async function TripViewPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { userId } = await auth();
   const { id } = await params;
-  const trip = await getFullItinerary(id);
 
-  return (
-    <div className="min-h-screen bg-[#F8F9FA]">
-      <div className="max-w-4xl mx-auto p-8">
-        <div className="bg-white p-6 rounded-2xl shadow-sm">
-          <h1 className="text-2xl font-bold">{trip.title}</h1>
-          <p className="text-sm text-gray-500 mt-1">{format(new Date(trip.startDate), "MMM dd")} – {format(new Date(trip.endDate), "MMM dd, yyyy")}</p>
-          {trip.description ? <p className="mt-3 text-sm text-gray-700">{trip.description}</p> : null}
-        </div>
+  if (!userId) {
+    redirect("/sign-in");
+  }
 
-        <div className="mt-6 space-y-6">
-          {trip.stops.map((stop: any) => (
-            <div key={stop.id} className="bg-white p-6 rounded-2xl shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold">{stop.cityName}</h2>
-                  <p className="text-xs text-gray-500">{format(new Date(stop.startDate), "MMM dd")} – {format(new Date(stop.endDate), "MMM dd")}</p>
-                </div>
-                <div className="text-sm text-gray-600">{stop.activities.length} activities</div>
-              </div>
+  const trip = await prisma.trip.findUnique({
+    where: { id },
+    include: {
+      stops: {
+        orderBy: { startDate: "asc" },
+        include: {
+          activities: {
+            orderBy: { startTime: "asc" },
+          },
+        },
+      },
+    },
+  });
 
-              <div className="mt-4 space-y-3">
-                {stop.activities.map((a: any) => (
-                  <div key={a.id} className="p-3 border rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">{a.title}</div>
-                        {a.description ? <div className="text-xs text-gray-500">{a.description}</div> : null}
-                      </div>
-                      <div className="text-xs text-gray-600">{format(new Date(a.startTime), "hh:mm a")}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  if (!trip) {
+    redirect("/my-trips");
+  }
+
+  // Allow owner or public trips
+  if (!trip.isPublic && trip.userId !== userId) {
+    redirect("/my-trips");
+  }
+
+  return <ItineraryViewerClient trip={trip} />;
 }

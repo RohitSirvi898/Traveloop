@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
             where: { userId }
         });
 
-        const tripIds = trips.map(trip => trip.id);
+        const tripIds = trips.map((trip: any) => trip.id);
 
         // Get all notes for those trips
         const notes = await prisma.tripNote.findMany({

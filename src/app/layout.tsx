@@ -29,8 +29,6 @@ export default function RootLayout({
             <Show when="signed-in">
               <div className="fixed top-6 right-8 z-50">
                 <UserButton
-                  afterSignOutUrl="/sign-in"
-                  userProfileUrl="/my-account"
                   appearance={{
                     elements: {
                       userButtonPopoverCard: "shadow-xl border border-slate-200 rounded-2xl",

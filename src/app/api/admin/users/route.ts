@@ -52,7 +52,7 @@ async function getTripsByUserId(userIds: string[]) {
       },
     });
 
-    return new Map(tripCounts.map((row) => [row.userId, row._count._all]));
+    return new Map(tripCounts.map((row: any) => [row.userId, row._count._all]));
   } catch {
     return new Map<string, number>();
   }

@@ -1,355 +1,455 @@
 "use client";
 
-import { Download, MoreVertical } from "lucide-react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  Download, Plus, Loader2, ArrowLeft,
+  Wallet, TrendingDown, TrendingUp, BarChart3,
+  MapPin, Calendar
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
-interface BudgetCategory {
-  name: string;
-  amount: number;
-  color: string;
-}
-
-interface RegionalCost {
-  city: string;
-  image: string;
-  duration: string;
-  estimatedSpend: number;
-  dailyAvg: number;
-  status: "over-budget" | "under-budget" | "on-target";
-}
-
-const mockBudgetData = {
-  totalBudget: 4500.0,
-  estimatedSpend: 3842.15,
-  remaining: 657.85,
+type Trip = { id: string; title: string; totalBudget: number | null; startDate: string; endDate: string };
+type Expense = {
+  id: string;
+  category: string;
+  description: string;
+  quantity: number;
+  unitCost: number;
+  totalAmount: number;
+  tripId: string;
 };
 
-const budgetCategories: BudgetCategory[] = [
-  { name: "Transport", amount: 1200, color: "#0d9488" },
-  { name: "Hotel", amount: 1500, color: "#14b8a6" },
-  { name: "Meals", amount: 800, color: "#f59e0b" },
-  { name: "Activities", amount: 342.15, color: "#78350f" },
-];
-
-const regionalCosts: RegionalCost[] = [
-  {
-    city: "Mumbai",
-    image: "🏙️",
-    duration: "4 Days",
-    estimatedSpend: 1240.0,
-    dailyAvg: 310,
-    status: "over-budget",
-  },
-  {
-    city: "Surat",
-    image: "🏖️",
-    duration: "3 Days",
-    estimatedSpend: 820.5,
-    dailyAvg: 273,
-    status: "under-budget",
-  },
-  {
-    city: "Goa",
-    image: "🌊",
-    duration: "5 Days",
-    estimatedSpend: 1781.65,
-    dailyAvg: 356,
-    status: "on-target",
-  },
-];
-
-function PieChart() {
-  const total = budgetCategories.reduce((sum, cat) => sum + cat.amount, 0);
-  let currentAngle = -90;
-
-  return (
-    <div className="flex flex-col items-center">
-      <svg width="160" height="160" viewBox="0 0 160 160" className="mb-6">
-        {budgetCategories.map((category) => {
-          const sliceAngle = (category.amount / total) * 360;
-          const startAngle = currentAngle;
-          const endAngle = currentAngle + sliceAngle;
-
-          const startRad = (startAngle * Math.PI) / 180;
-          const endRad = (endAngle * Math.PI) / 180;
-
-          const x1 = 80 + 60 * Math.cos(startRad);
-          const y1 = 80 + 60 * Math.sin(startRad);
-          const x2 = 80 + 60 * Math.cos(endRad);
-          const y2 = 80 + 60 * Math.sin(endRad);
-
-          const largeArc = sliceAngle > 180 ? 1 : 0;
-
-          const path = [
-            `M 80 80`,
-            `L ${x1} ${y1}`,
-            `A 60 60 0 ${largeArc} 1 ${x2} ${y2}`,
-            `Z`,
-          ].join(" ");
-
-          currentAngle = endAngle;
-
-          return (
-            <path
-              key={category.name}
-              d={path}
-              fill={category.color}
-              stroke="white"
-              strokeWidth="3"
-            />
-          );
-        })}
-        {/* Inner circle for donut effect */}
-        <circle cx="80" cy="80" r="35" fill="white" />
-        <text
-          x="80"
-          y="88"
-          textAnchor="middle"
-          className="text-2xl font-bold fill-slate-900"
-        >
-          $3.8k
-        </text>
-      </svg>
-
-      <div className="space-y-2 text-sm text-center">
-        {budgetCategories.map((category) => (
-          <div key={category.name} className="flex items-center justify-center gap-2">
-            <div
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: category.color }}
-            />
-            <span className="text-slate-600">{category.name}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const CATEGORIES = ["Transport", "Hotel", "Meals", "Activities", "Shopping", "Other"];
+const CATEGORY_COLORS: Record<string, string> = {
+  Transport: "#0d9488",
+  Hotel: "#14b8a6",
+  Meals: "#f59e0b",
+  Activities: "#8b5cf6",
+  Shopping: "#ec4899",
+  Other: "#6b7280",
+};
 
 export default function Expenses() {
-  const budgetUsed = (mockBudgetData.estimatedSpend / mockBudgetData.totalBudget) * 100;
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [selectedTripId, setSelectedTripId] = useState("");
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    category: "Transport",
+    description: "",
+    quantity: 1,
+    unitCost: 0,
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/trips")
+      .then((r) => r.json())
+      .then((d) => {
+        const t = d.trips || [];
+        setTrips(t);
+        if (t.length > 0) setSelectedTripId(t[0].id);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedTripId) return;
+    setLoadingExpenses(true);
+    fetch(`/api/expenses?tripId=${selectedTripId}`)
+      .then((r) => r.json())
+      .then((d) => setExpenses(d.expenses || []))
+      .finally(() => setLoadingExpenses(false));
+  }, [selectedTripId]);
+
+  const selectedTrip = trips.find((t) => t.id === selectedTripId);
+  const totalBudget = selectedTrip?.totalBudget ?? 0;
+  const totalSpend = expenses.reduce((sum, e) => sum + e.totalAmount, 0);
+  const remaining = totalBudget - totalSpend;
+  const budgetUsed = totalBudget > 0 ? Math.round((totalSpend / totalBudget) * 100) : 0;
+
+  // Group by category
+  const byCategory: Record<string, number> = {};
+  expenses.forEach((e) => {
+    byCategory[e.category] = (byCategory[e.category] || 0) + e.totalAmount;
+  });
+  const categoryEntries = Object.entries(byCategory).sort(([, a], [, b]) => b - a);
+  const catTotal = categoryEntries.reduce((sum, [, v]) => sum + v, 0);
+
+  const handleAddExpense = async () => {
+    if (!formData.description.trim() || formData.unitCost <= 0) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...formData, tripId: selectedTripId }),
+      });
+      if (res.ok) {
+        const { expense } = await res.json();
+        setExpenses((prev) => [...prev, expense]);
+        setShowAddModal(false);
+        setFormData({ category: "Transport", description: "", quantity: 1, unitCost: 0 });
+        toast.success("Expense added!");
+      } else {
+        toast.error("Failed to add expense.");
+      }
+    } catch {
+      toast.error("Failed to add expense.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    try {
+      await fetch(`/api/expenses/${id}`, { method: "DELETE" });
+    } catch {
+      toast.error("Failed to delete.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="ml-40 min-h-screen bg-white">
-      {/* Top Header with Profile & Notifications */}
-      <div className="sticky top-0 bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="sticky top-0 bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center z-10">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            Budget Overview
-          </h1>
-          <p className="text-slate-600 text-sm">
-            West India Expedition: Oct 12 - Oct 25
-          </p>
+          <h1 className="text-3xl font-bold text-slate-900">Budget Overview</h1>
+          {selectedTrip && (
+            <p className="text-slate-600 text-sm">
+              {selectedTrip.title}
+            </p>
+          )}
         </div>
-        <div></div>
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedTripId}
+            onChange={(e) => setSelectedTripId(e.target.value)}
+            className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
+          >
+            {trips.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.title}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Main Content */}
       <div className="px-8 py-6">
-        {/* Export and Add Expense Buttons */}
+        {/* Action buttons */}
         <div className="flex gap-3 mb-8">
-          <button className="flex items-center gap-2 px-4 py-2 text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
-            <Download size={18} />
-            Export
-          </button>
-          <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-4 py-2">
-            + Add Expense
+          <Button
+            onClick={() => setShowAddModal(true)}
+            className="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-4 py-2"
+            disabled={!selectedTripId}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Expense
           </Button>
         </div>
 
-        {/* Three Stats Row */}
-        <div className="grid grid-cols-3 gap-6 mb-8">
-          {/* Total Budget & Estimated Spend Combined */}
-          <div className="col-span-2 bg-white rounded-xl p-8 border border-slate-200 shadow-sm">
-            <div className="grid grid-cols-2 gap-12">
-              {/* Total Budget */}
-              <div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">
-                  Total Budget
-                </p>
-                <p className="text-5xl font-bold text-slate-900 mt-4">
-                  ${mockBudgetData.totalBudget.toFixed(2)}
-                </p>
-              </div>
-
-              {/* Estimated Spend */}
-              <div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">
-                  Estimated Spend
-                </p>
-                <p className="text-5xl font-bold text-teal-600 mt-4">
-                  ${mockBudgetData.estimatedSpend.toFixed(2)}
-                </p>
-              </div>
-            </div>
-
-            {/* Progress Section */}
-            <div className="space-y-4 mt-8 pt-8 border-t border-slate-200">
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-semibold text-slate-700">
-                    {budgetUsed.toFixed(0)}% of budget used
-                  </span>
-                  <span className="text-sm font-medium text-slate-600">
-                    ${mockBudgetData.remaining.toFixed(2)} remaining
-                  </span>
+        {trips.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Wallet className="w-16 h-16 text-gray-200 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">No trips found</h3>
+            <p className="text-gray-400 mb-6">Create a trip first to start tracking expenses.</p>
+            <Link href="/trips/create">
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Trip
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <>
+            {/* Stats Row */}
+            <div className="grid grid-cols-3 gap-6 mb-8">
+              <div className="col-span-2 bg-white rounded-xl p-8 border border-slate-200 shadow-sm">
+                <div className="grid grid-cols-2 gap-12">
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">
+                      Total Budget
+                    </p>
+                    <p className="text-5xl font-bold text-slate-900 mt-4">
+                      ₹{totalBudget.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">
+                      Total Spent
+                    </p>
+                    <p className="text-5xl font-bold text-teal-600 mt-4">
+                      ₹{totalSpend.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-teal-500 to-teal-600 h-full rounded-full transition-all"
-                    style={{ width: `${budgetUsed}%` }}
-                  />
+
+                <div className="space-y-4 mt-8 pt-8 border-t border-slate-200">
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm font-semibold text-slate-700">
+                        {budgetUsed}% of budget used
+                      </span>
+                      <span className="text-sm font-medium text-slate-600">
+                        ₹{remaining.toLocaleString()} remaining
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          budgetUsed > 90 ? "bg-red-500" : "bg-gradient-to-r from-teal-500 to-teal-600"
+                        }`}
+                        style={{ width: `${Math.min(100, budgetUsed)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                        budgetUsed > 90 ? "bg-red-500" : budgetUsed > 75 ? "bg-amber-500" : "bg-green-500"
+                      }`}
+                    />
+                    <span className="text-sm text-slate-700 font-medium">
+                      {budgetUsed > 90
+                        ? "Over budget! Consider reducing expenses"
+                        : budgetUsed > 75
+                          ? "Approaching budget limit"
+                          : "On track for planned savings"}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-green-500 flex-shrink-0" />
-                <span className="text-sm text-slate-700 font-medium">
-                  On track for planned savings
-                </span>
+              {/* Breakdown by Category */}
+              <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm flex flex-col">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-widest mb-6">
+                  Breakdown by Category
+                </p>
+                {categoryEntries.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+                    No expenses yet
+                  </div>
+                ) : (
+                  <div className="space-y-3 flex-1">
+                    {categoryEntries.map(([cat, amount]) => {
+                      const pct = catTotal > 0 ? Math.round((amount / catTotal) * 100) : 0;
+                      const color = CATEGORY_COLORS[cat] || "#6b7280";
+                      return (
+                        <div key={cat}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: color }}
+                              />
+                              <span className="text-sm text-slate-700">{cat}</span>
+                            </div>
+                            <span className="text-sm font-semibold text-slate-900">
+                              ₹{amount.toLocaleString()} ({pct}%)
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{ width: `${pct}%`, backgroundColor: color }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
 
-          {/* Breakdown by Category Card */}
-          <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-widest mb-6">
-              Breakdown by Category
-            </p>
-            <PieChart />
-          </div>
-        </div>
-
-        {/* Regional Cost Breakdown */}
-        <div className="bg-white rounded-xl p-6 border border-slate-200 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Regional Cost Breakdown
-            </h2>
-            <span className="text-xs text-teal-600 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
-              Sorted by Highest Spend
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600">
-                    City
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600">
-                    Duration
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600">
-                    Est. Spend
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600">
-                    Daily Avg
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600">
-                    Status
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {regionalCosts.map((cost) => (
-                  <tr
-                    key={cost.city}
-                    className="border-b border-slate-200 hover:bg-white transition-colors"
-                  >
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">{cost.image}</span>
-                        <span className="font-medium text-slate-900">
-                          {cost.city}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-sm text-slate-600">
-                      {cost.duration}
-                    </td>
-                    <td className="py-4 px-4 font-semibold text-teal-600">
-                      ${cost.estimatedSpend.toFixed(2)}
-                    </td>
-                    <td className="py-4 px-4 text-sm text-slate-600">
-                      ${cost.dailyAvg}/day
-                    </td>
-                    <td className="py-4 px-4">
-                      {cost.status === "over-budget" && (
-                        <span className="inline-block px-3 py-1 rounded text-xs font-medium bg-red-100 text-red-700">
-                          🔴 Over Budget [$42]
-                        </span>
-                      )}
-                      {cost.status === "under-budget" && (
-                        <span className="inline-block px-3 py-1 rounded text-xs font-medium bg-teal-100 text-teal-700">
-                          🟢 Under Budget
-                        </span>
-                      )}
-                      {cost.status === "on-target" && (
-                        <span className="inline-block px-3 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700">
-                          🟡 On Target
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4">
-                      <button className="text-slate-400 hover:text-slate-600 transition-colors">
-                        <MoreVertical size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Budget Insights Row */}
-        <div className="grid grid-cols-2 gap-6 mb-8">
-          {/* Highest Daily Average */}
-          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-            <div className="text-3xl font-bold text-slate-900 mb-2">
-              $295.55
-            </div>
-            <p className="text-sm text-slate-600 mb-2">
-              Highest Daily Average
-            </p>
-            <p className="text-xs text-slate-500">
-              Last Trip
-            </p>
-          </div>
-
-          {/* Budget Anomalies */}
-          <div className="bg-red-50 rounded-xl p-6 border border-red-200 shadow-sm">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-900">
-                Budget Anomalies
-              </p>
-              <div className="text-xl font-bold text-red-600">
-                Oct 14 (Over by $42)
+            {/* Expense List */}
+            {loadingExpenses ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
               </div>
-              <div className="text-xs text-red-600">
-                Oct 19 (Over by $15)
+            ) : expenses.length > 0 ? (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    All Expenses ({expenses.length})
+                  </h2>
+                </div>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600">
+                        Description
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600">
+                        Category
+                      </th>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600">
+                        Qty
+                      </th>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600">
+                        Unit Cost
+                      </th>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600">
+                        Total
+                      </th>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {expenses.map((e) => (
+                      <tr
+                        key={e.id}
+                        className="border-b border-slate-100 hover:bg-slate-50 transition"
+                      >
+                        <td className="py-3 px-4 font-medium text-slate-900 text-sm">
+                          {e.description}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                            style={{
+                              backgroundColor: `${CATEGORY_COLORS[e.category] || "#6b7280"}15`,
+                              color: CATEGORY_COLORS[e.category] || "#6b7280",
+                            }}
+                          >
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: CATEGORY_COLORS[e.category] || "#6b7280" }}
+                            />
+                            {e.category}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm text-slate-600">
+                          {e.quantity}
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm text-slate-600">
+                          ₹{e.unitCost.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm font-semibold text-teal-600">
+                          ₹{e.totalAmount.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            onClick={() => handleDelete(e.id)}
+                            className="text-red-400 hover:text-red-600 transition text-xs font-medium"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Ledger Section */}
-        <div className="bg-yellow-50 rounded-xl p-6 border border-yellow-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-sm text-slate-900 font-medium">
-              Review all itemized receipts?
-            </p>
-          </div>
-          <Button className="bg-teal-600 hover:bg-teal-700 text-white text-xs py-2 px-4">
-            Go to Ledger
-          </Button>
-        </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-slate-200 p-12 flex flex-col items-center text-center">
+                <BarChart3 className="w-12 h-12 text-gray-200 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">No expenses recorded</h3>
+                <p className="text-gray-400 text-sm">Click "Add Expense" to start tracking.</p>
+              </div>
+            )}
+          </>
+        )}
       </div>
+
+      {/* Add Expense Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 space-y-4">
+            <h2 className="text-xl font-bold text-gray-900">Add Expense</h2>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Description</label>
+              <input
+                type="text"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="e.g., Flight to Mumbai"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Quantity</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Unit Cost (₹)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={formData.unitCost}
+                  onChange={(e) => setFormData({ ...formData, unitCost: Number(e.target.value) })}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                />
+              </div>
+            </div>
+
+            <div className="text-sm text-gray-500">
+              Total: <span className="font-bold text-teal-600">₹{(formData.quantity * formData.unitCost).toLocaleString()}</span>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddExpense}
+                disabled={submitting}
+                className="flex-1 bg-teal-600 hover:bg-teal-700 text-white rounded-xl"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Expense"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

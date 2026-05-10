@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus, LayoutDashboard, Map, BookOpen, Banknote } from "lucide-react";
+import { Plus, LayoutDashboard, Map, BookOpen, Banknote, Compass, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "My Trips", href: "/my-trips", icon: Map },
+  { name: "Explore", href: "/explore", icon: Compass },
   { name: "Journal", href: "/journal", icon: BookOpen },
   { name: "Expenses", href: "/expenses", icon: Banknote },
 ];
@@ -45,7 +46,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 space-y-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || (pathname === '/' && item.href === '/dashboard');
+          const isActive = pathname === item.href || pathname.startsWith(item.href + '/') || (pathname === '/' && item.href === '/dashboard');
           return (
             <Link
               key={item.name}
@@ -63,6 +64,22 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Account link at bottom */}
+      <div className="pt-4 border-t border-gray-200">
+        <Link
+          href="/my-account"
+          className={cn(
+            "flex items-center gap-4 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+            pathname === "/my-account"
+              ? "bg-[#E6F4F2] text-[#2AB5A0]"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+          )}
+        >
+          <User className={cn("w-5 h-5", pathname === "/my-account" ? "text-[#2AB5A0]" : "text-gray-500")} />
+          My Account
+        </Link>
+      </div>
     </aside>
   );
 }

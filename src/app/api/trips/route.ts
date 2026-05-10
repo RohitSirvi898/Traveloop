@@ -9,7 +9,18 @@ export async function GET(req: NextRequest) {
 
         const trips = await prisma.trip.findMany({
             where: { userId },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            include: {
+                stops: {
+                    select: {
+                        id: true,
+                        cityName: true,
+                        activities: {
+                            select: { cost: true }
+                        }
+                    }
+                }
+            }
         });
 
         return NextResponse.json({ trips });

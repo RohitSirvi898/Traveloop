@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
             totalTrips,
             publicTrips,
             totalActivities,
-            topDestinations: stops.map(s => ({ city: s.cityName, count: s._count.cityName }))
+            topDestinations: stops.map((s: any) => ({ city: s.cityName, count: s._count.cityName }))
         });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

@@ -242,7 +242,6 @@ export default function SignUpPage() {
                           spacingUnit: '0.5rem',
                         },
                       }}
-                      redirectUrl="/dashboard"
                       signInUrl="/sign-in"
                       forceRedirectUrl="/dashboard"
                     />

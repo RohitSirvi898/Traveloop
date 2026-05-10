@@ -177,9 +177,11 @@ export default function ItineraryBuilderClient({ trip: initialTrip }: { trip: Tr
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Share2 className="w-4 h-4" /> Share
-                  </Button>
+                  <Link href={`/trips/${trip.id}`}>
+                    <Button variant="outline" className="flex items-center gap-2 border-teal-600 text-teal-700 hover:bg-teal-50">
+                      View Itinerary
+                    </Button>
+                  </Link>
                   <Button className="bg-teal-700 hover:bg-teal-800 text-white">
                     Save Draft
                   </Button>

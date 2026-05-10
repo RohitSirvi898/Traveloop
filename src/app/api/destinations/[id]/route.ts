@@ -3,13 +3,14 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/database/prisma/client";
 
 // GET /api/destinations/[id]  — returns a single destination with its activities
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { userId } = await auth();
+        const { id } = await params;
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         const destination = await prisma.globalDestination.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: { activities: true },
         });
 
