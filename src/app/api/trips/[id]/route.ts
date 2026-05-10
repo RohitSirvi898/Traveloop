@@ -54,7 +54,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                 startDate: data.startDate ? new Date(data.startDate) : undefined,
                 endDate: data.endDate ? new Date(data.endDate) : undefined,
                 coverImage: data.coverImage,
-                isPublic: data.isPublic
+                isPublic: data.isPublic,
+                totalBudget: data.totalBudget,
+                proTip: data.proTip
             }
         });
 

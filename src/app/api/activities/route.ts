@@ -25,7 +25,9 @@ export async function POST(req: NextRequest) {
                 title: data.title,
                 description: data.description || "",
                 cost: data.cost || 0,
-                date: new Date(data.date)
+                type: data.type || "ACTIVITY",
+                startTime: new Date(data.startTime),
+                endTime: data.endTime ? new Date(data.endTime) : null
             }
         });
 

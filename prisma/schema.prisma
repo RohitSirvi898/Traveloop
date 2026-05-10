@@ -6,25 +6,23 @@ datasource db {
   provider = "postgresql"
 }
 
-// ---------------------------------------------------------
-// 1. USER PROFILE (Maps to Screen 1, 2, & 7)
-// We use Clerk's ID as the primary key here so they link perfectly.
-// ---------------------------------------------------------
 model User {
-  id        String   @id // This will be the Clerk userId
-  email     String   @unique
-  firstName String?
-  lastName  String?
-  city      String?
-  country   String?
-  photoUrl  String?
-  trips     Trip[]   // A user can have many trips
-  createdAt DateTime @default(now())
+  id                String   @id // Clerk userId
+  email             String   @unique
+  firstName         String?
+  lastName          String?
+  city              String?
+  country           String?
+  photoUrl          String?
+  // New Fields from Settings Screen
+  language          String   @default("English (United States)")
+  timezone          String   @default("IST (UTC +5:30)")
+  savedDestinations String[] // PostgreSQL supports string arrays
+  
+  trips             Trip[]   
+  createdAt         DateTime @default(now())
 }
 
-// ---------------------------------------------------------
-// 2. TRIP CORE (Maps to Screen 3, 4, 6, & 10)
-// ---------------------------------------------------------
 model Trip {
   id          String          @id @default(uuid())
   userId      String
@@ -34,9 +32,12 @@ model Trip {
   startDate   DateTime
   endDate     DateTime
   coverImage  String?
-  isPublic    Boolean         @default(false) // For the Community Tab (Screen 10)
+  isPublic    Boolean         @default(false)
   
-  // Relations
+  // New Fields from Budget and Shared Screens
+  totalBudget Float?          
+  proTip      String?         @db.Text
+  
   stops       Stop[]          
   expenses    Expense[]       
   notes       TripNote[]      
@@ -46,9 +47,6 @@ model Trip {
   updatedAt   DateTime        @updatedAt
 }
 
-// ---------------------------------------------------------
-// 3. STOPS / CITIES (Maps to Screen 5 - Build Itinerary Sections)
-// ---------------------------------------------------------
 model Stop {
   id        String     @id @default(uuid())
   tripId    String
@@ -58,12 +56,9 @@ model Stop {
   endDate   DateTime
   budget    Float?
   
-  activities Activity[] // A stop has many activities
+  activities Activity[] 
 }
 
-// ---------------------------------------------------------
-// 4. ACTIVITIES (Maps to Screen 8 & 9 - Itinerary View)
-// ---------------------------------------------------------
 model Activity {
   id          String   @id @default(uuid())
   stopId      String
@@ -71,42 +66,42 @@ model Activity {
   title       String
   description String?
   cost        Float    @default(0)
-  date        DateTime // Specific day of the activity
+  
+  // New Fields from Itinerary Timeline Screen
+  type        String   @default("ACTIVITY") // e.g., TRANSPORT, LODGING, ACTIVITY
+  startTime   DateTime
+  endTime     DateTime?
 }
 
-// ---------------------------------------------------------
-// 5. EXPENSES & INVOICE (Maps exactly to Screen 14)
-// ---------------------------------------------------------
 model Expense {
   id          String   @id @default(uuid())
   tripId      String
   trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  category    String   // e.g., "hotel", "travel", "food"
+  category    String   
   description String
   quantity    Int      @default(1)
   unitCost    Float
-  totalAmount Float    // quantity * unitCost
+  totalAmount Float    
 }
 
-// ---------------------------------------------------------
-// 6. PACKING CHECKLIST (Maps to Screen 11)
-// ---------------------------------------------------------
 model ChecklistItem {
   id        String   @id @default(uuid())
   tripId    String
   trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  category  String   // "Documents", "Clothing", "Electronics"
+  category  String   
   itemName  String
   isPacked  Boolean  @default(false)
 }
 
-// ---------------------------------------------------------
-// 7. TRIP NOTES (Maps to Screen 13)
-// ---------------------------------------------------------
 model TripNote {
-  id        String   @id @default(uuid())
-  tripId    String
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  content   String   @db.Text
-  date      DateTime @default(now())
+  id          String   @id @default(uuid())
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  // New Fields from Journal Screen
+  title       String
+  locationTag String?  // e.g., "Mumbai" or "Surat"
+  
+  content     String   @db.Text
+  date        DateTime @default(now())
 }

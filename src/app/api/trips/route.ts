@@ -41,6 +41,8 @@ export async function POST(req: NextRequest) {
                 startDate: new Date(data.startDate),
                 endDate: new Date(data.endDate),
                 coverImage: data.coverImage || null,
+                totalBudget: data.totalBudget || null,
+                proTip: data.proTip || null,
             }
         });
 

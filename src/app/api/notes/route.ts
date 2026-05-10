@@ -18,6 +18,8 @@ export async function POST(req: NextRequest) {
         const note = await prisma.tripNote.create({
             data: {
                 tripId: data.tripId,
+                title: data.title,
+                locationTag: data.locationTag || null,
                 content: data.content
             }
         });

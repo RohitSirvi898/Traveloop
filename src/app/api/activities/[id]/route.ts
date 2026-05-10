@@ -26,7 +26,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                 title: data.title,
                 description: data.description,
                 cost: data.cost,
-                date: data.date ? new Date(data.date) : undefined
+                type: data.type,
+                startTime: data.startTime ? new Date(data.startTime) : undefined,
+                endTime: data.endTime ? new Date(data.endTime) : undefined
             }
         });
 
