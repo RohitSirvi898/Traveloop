@@ -1,11 +1,18 @@
 import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+function createPrismaClient() {
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const adapter = new PrismaPg(pool);
+    return new PrismaClient({ adapter });
+}
 
-export const prisma =
-    globalForPrisma.prisma ||
-    new PrismaClient({
-        log: ["query"],
-    });
+// In production, reuse one instance. In dev, always create fresh to avoid stale cache after `prisma generate`.
+const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma; 
+export const prisma: PrismaClient =
+    process.env.NODE_ENV === "production"
+        ? (globalForPrisma.prisma ?? (globalForPrisma.prisma = createPrismaClient()))
+        : createPrismaClient();
+ 

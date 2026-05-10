@@ -104,3 +104,42 @@ export async function saveItinerary(data: SaveItineraryInput) {
         throw new Error("Could not save itinerary data.");
     }
 }
+
+export async function createTrip(data: { title: string; startDate: string; endDate: string; description?: string }) {
+    try {
+        const { userId } = await auth();
+        if (!userId) throw new Error("Unauthorized");
+
+        // Import currentUser from Clerk to get profile info
+        const { currentUser } = await import("@clerk/nextjs/server");
+        const clerkUser = await currentUser();
+
+        // Ensure the user exists in our DB before creating a trip (FK constraint)
+        await prisma.user.upsert({
+            where: { id: userId },
+            update: {},
+            create: {
+                id: userId,
+                email: clerkUser?.emailAddresses?.[0]?.emailAddress ?? "",
+                firstName: clerkUser?.firstName ?? null,
+                lastName: clerkUser?.lastName ?? null,
+                photoUrl: clerkUser?.imageUrl ?? null,
+            },
+        });
+
+        const trip = await prisma.trip.create({
+            data: {
+                userId,
+                title: data.title,
+                startDate: new Date(data.startDate),
+                endDate: new Date(data.endDate),
+                description: data.description,
+            }
+        });
+
+        return { success: true, tripId: trip.id };
+    } catch (error) {
+        console.error("Failed to create trip:", error);
+        throw new Error("Could not create trip.");
+    }
+}

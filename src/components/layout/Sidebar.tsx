@@ -33,12 +33,14 @@ export function Sidebar() {
 
       {/* Primary Action */}
       <div className="mb-10">
-        <Button 
-          className="w-full bg-[#F5A623] hover:bg-[#d98f1a] text-white font-medium rounded-lg h-12 shadow-sm flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          Plan New Trip
-        </Button>
+        <Link href="/trips/create" className="w-full block">
+          <Button 
+            className="w-full bg-[#F5A623] hover:bg-[#d98f1a] text-white font-medium rounded-lg h-12 shadow-sm flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Plan New Trip
+          </Button>
+        </Link>
       </div>
 
       {/* Navigation */}

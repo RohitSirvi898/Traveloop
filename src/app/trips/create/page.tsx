@@ -3,10 +3,13 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { ArrowRight, Camera, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { createTrip } from "@/lib/actions";
 
 import { Button } from "@/components/ui/button";
 
 export default function CreateTripPage() {
+  const router = useRouter();
   const [tripName, setTripName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -52,10 +55,29 @@ export default function CreateTripPage() {
     setCoverPreviewUrl(previewUrl);
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    toast.success("Trip details saved. Next step can connect to backend later.");
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canSubmit || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const result = await createTrip({
+        title: tripName,
+        startDate,
+        endDate,
+        description
+      });
+      if (result.success) {
+        toast.success("Trip created successfully!");
+        router.push(`/trips/${result.tripId}/build`);
+      }
+    } catch (error) {
+      toast.error("Failed to create trip. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -191,10 +213,10 @@ export default function CreateTripPage() {
             <Button
               type="submit"
               size="lg"
-              disabled={!canSubmit}
+              disabled={!canSubmit || isSubmitting}
               className="h-12 w-full rounded-xl bg-teal-700 text-base font-semibold text-white hover:bg-teal-800"
             >
-              Save & Continue <ArrowRight className="size-4" />
+              {isSubmitting ? "Saving..." : "Save & Continue"} <ArrowRight className="size-4" />
             </Button>
 
             <p className="text-center text-xs text-slate-500">Step 1 of 3: Core Details</p>

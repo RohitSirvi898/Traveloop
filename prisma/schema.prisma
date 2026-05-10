@@ -105,3 +105,25 @@ model TripNote {
   content     String   @db.Text
   date        DateTime @default(now())
 }
+
+model GlobalDestination {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  region      String
+  description String   @db.Text
+  imageUrl    String
+  costIndex   String   // "$ ", "$$ ", or "$$$ " 
+  dailyBudget Float
+  
+  activities  GlobalActivity[]
+}
+
+model GlobalActivity {
+  id            String   @id @default(uuid())
+  destinationId String
+  destination   GlobalDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  title         String
+  type          String   // "CULTURE", "SCENIC", "FOOD", etc.
+  duration      String   // e.g., "2 Hours"
+  estimatedCost Float
+}
