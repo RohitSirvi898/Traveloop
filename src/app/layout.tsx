@@ -9,8 +9,8 @@ import { SidebarWrapper } from "@/components/layout/SidebarWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Traveloop",
-  description: "Travel Planner & Budget Management",
+  title: "Traveloop - Plan Your Perfect Trip",
+  description: "Plan incredible trips, manage budgets, build itineraries, and travel with confidence.",
 };
 
 export default function RootLayout({
