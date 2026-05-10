@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------
+// 1. USER PROFILE (Maps to Screen 1, 2, & 7)
+// We use Clerk's ID as the primary key here so they link perfectly.
+// ---------------------------------------------------------
+model User {
+  id        String   @id // This will be the Clerk userId
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  city      String?
+  country   String?
+  photoUrl  String?
+  trips     Trip[]   // A user can have many trips
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------
+// 2. TRIP CORE (Maps to Screen 3, 4, 6, & 10)
+// ---------------------------------------------------------
+model Trip {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  coverImage  String?
+  isPublic    Boolean         @default(false) // For the Community Tab (Screen 10)
+  
+  // Relations
+  stops       Stop[]          
+  expenses    Expense[]       
+  notes       TripNote[]      
+  checklist   ChecklistItem[] 
+  
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+// ---------------------------------------------------------
+// 3. STOPS / CITIES (Maps to Screen 5 - Build Itinerary Sections)
+// ---------------------------------------------------------
+model Stop {
+  id        String     @id @default(uuid())
+  tripId    String
+  trip      Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  cityName  String
+  startDate DateTime
+  endDate   DateTime
+  budget    Float?
+  
+  activities Activity[] // A stop has many activities
+}
+
+// ---------------------------------------------------------
+// 4. ACTIVITIES (Maps to Screen 8 & 9 - Itinerary View)
+// ---------------------------------------------------------
+model Activity {
+  id          String   @id @default(uuid())
+  stopId      String
+  stop        Stop     @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  cost        Float    @default(0)
+  date        DateTime // Specific day of the activity
+}
+
+// ---------------------------------------------------------
+// 5. EXPENSES & INVOICE (Maps exactly to Screen 14)
+// ---------------------------------------------------------
+model Expense {
+  id          String   @id @default(uuid())
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  category    String   // e.g., "hotel", "travel", "food"
+  description String
+  quantity    Int      @default(1)
+  unitCost    Float
+  totalAmount Float    // quantity * unitCost
+}
+
+// ---------------------------------------------------------
+// 6. PACKING CHECKLIST (Maps to Screen 11)
+// ---------------------------------------------------------
+model ChecklistItem {
+  id        String   @id @default(uuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  category  String   // "Documents", "Clothing", "Electronics"
+  itemName  String
+  isPacked  Boolean  @default(false)
+}
+
+// ---------------------------------------------------------
+// 7. TRIP NOTES (Maps to Screen 13)
+// ---------------------------------------------------------
+model TripNote {
+  id        String   @id @default(uuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  date      DateTime @default(now())
+}
