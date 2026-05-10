@@ -41,13 +41,33 @@ export default function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
+        // First try to load real data
         const [tripsRes, destRes] = await Promise.all([
           fetch("/api/trips"),
           fetch("/api/destinations"),
         ]);
         if (tripsRes.ok) {
           const data = await tripsRes.json();
-          setTrips(data.trips || []);
+          let realTrips = data.trips || [];
+
+          // Auto-seed demo data if the user has zero trips
+          if (realTrips.length === 0) {
+            try {
+              const seedRes = await fetch("/api/seed", { method: "POST" });
+              if (seedRes.ok) {
+                // Re-fetch trips after seeding
+                const freshRes = await fetch("/api/trips");
+                if (freshRes.ok) {
+                  const freshData = await freshRes.json();
+                  realTrips = freshData.trips || [];
+                }
+              }
+            } catch {
+              // seed failed, continue with empty
+            }
+          }
+
+          setTrips(realTrips);
         }
         if (destRes.ok) {
           const data = await destRes.json();

@@ -37,19 +37,25 @@ export default async function TripViewPage({
     redirect("/sign-in");
   }
 
-  const trip = await prisma.trip.findUnique({
-    where: { id },
-    include: {
-      stops: {
-        orderBy: { startDate: "asc" },
-        include: {
-          activities: {
-            orderBy: { startTime: "asc" },
+  let trip;
+  try {
+    trip = await prisma.trip.findUnique({
+      where: { id },
+      include: {
+        stops: {
+          orderBy: { startDate: "asc" },
+          include: {
+            activities: {
+              orderBy: { startTime: "asc" },
+            },
           },
         },
       },
-    },
-  });
+    });
+  } catch (e) {
+    console.error("Error fetching trip:", e);
+    redirect("/my-trips");
+  }
 
   if (!trip) {
     redirect("/my-trips");
@@ -60,5 +66,33 @@ export default async function TripViewPage({
     redirect("/my-trips");
   }
 
-  return <ItineraryViewerClient trip={trip} />;
+  // Serialize dates to ISO strings to avoid hydration issues when passing
+  // Prisma Date objects from Server Component → Client Component.
+  const serializedTrip = {
+    id: trip.id,
+    title: trip.title,
+    description: trip.description,
+    startDate: trip.startDate.toISOString(),
+    endDate: trip.endDate.toISOString(),
+    coverImage: trip.coverImage,
+    totalBudget: trip.totalBudget,
+    stops: trip.stops.map((stop) => ({
+      id: stop.id,
+      cityName: stop.cityName,
+      startDate: stop.startDate.toISOString(),
+      endDate: stop.endDate.toISOString(),
+      budget: stop.budget,
+      activities: stop.activities.map((act) => ({
+        id: act.id,
+        title: act.title,
+        description: act.description,
+        cost: act.cost,
+        type: act.type,
+        startTime: act.startTime.toISOString(),
+        endTime: act.endTime ? act.endTime.toISOString() : null,
+      })),
+    })),
+  };
+
+  return <ItineraryViewerClient trip={serializedTrip} />;
 }

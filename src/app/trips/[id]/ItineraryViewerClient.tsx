@@ -62,6 +62,14 @@ type Trip = {
   stops: Stop[];
 };
 
+/** Safely parse a date value — handles ISO strings, Date objects, and timestamps */
+function safeDate(value: string | Date | number): Date {
+  if (value instanceof Date) return value;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return new Date(); // fallback to now
+  return d;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   CULTURE:       <Landmark className="w-4 h-4" />,
@@ -109,13 +117,13 @@ const TOD_ICONS = {
 /** Given a stop, compute all calendar days within [startDate, endDate) and
  *  attach activities that fall on each day. */
 function buildDays(stop: Stop) {
-  const start = new Date(stop.startDate);
-  const end   = new Date(stop.endDate);
+  const start = safeDate(stop.startDate);
+  const end   = safeDate(stop.endDate);
   const days  = eachDayOfInterval({ start, end: end > start ? end : start });
 
   return days.map((date, i) => {
     const acts = stop.activities.filter((a) => {
-      const aDate = new Date(a.startTime);
+      const aDate = safeDate(a.startTime);
       return aDate.toDateString() === date.toDateString();
     });
     return { dayIndex: i + 1, date, activities: acts };
@@ -135,8 +143,8 @@ function computeTotalSpend(stops: Stop[]) {
 function ActivityCard({ activity }: { activity: Activity }) {
   const c   = getColors(activity.type);
   const icon = getIcon(activity.type);
-  const startDt = new Date(activity.startTime);
-  const endDt   = activity.endTime ? new Date(activity.endTime) : null;
+  const startDt = safeDate(activity.startTime);
+  const endDt   = activity.endTime ? safeDate(activity.endTime) : null;
   const tod     = getTimeOfDay(startDt);
 
   return (
@@ -185,6 +193,7 @@ function DaySection({
   globalDayNum,
   stop,
   tripId,
+  isPublicView,
 }: {
   dayIndex: number;
   date: Date;
@@ -282,7 +291,7 @@ function DaySection({
 function StopPanel({ stop, tripId, globalStartDay, isPublicView }: { stop: Stop; tripId: string; globalStartDay: number; isPublicView?: boolean }) {
   const days = buildDays(stop);
   const stopTotalCost = stop.activities.reduce((a, act) => a + act.cost, 0);
-  const nights = Math.max(0, differenceInDays(new Date(stop.endDate), new Date(stop.startDate)));
+  const nights = Math.max(0, differenceInDays(safeDate(stop.endDate), safeDate(stop.startDate)));
   const completedDays = days.filter((d) => d.activities.length > 0).length;
 
   return (
@@ -300,7 +309,7 @@ function StopPanel({ stop, tripId, globalStartDay, isPublicView }: { stop: Stop;
             </div>
             <h2 className="text-2xl font-bold mb-1">{stop.cityName}</h2>
             <p className="text-teal-200 text-sm">
-              {format(new Date(stop.startDate), "MMM dd")} – {format(new Date(stop.endDate), "MMM dd, yyyy")}
+              {format(safeDate(stop.startDate), "MMM dd")} – {format(safeDate(stop.endDate), "MMM dd, yyyy")}
               <span className="ml-2 opacity-60">· {nights} night{nights !== 1 ? "s" : ""}</span>
             </p>
           </div>
@@ -358,7 +367,7 @@ export default function ItineraryViewerClient({ trip, isPublicView = false }: { 
   );
 
   const totalDays = useMemo(
-    () => Math.max(1, differenceInDays(new Date(trip.endDate), new Date(trip.startDate)) + 1),
+    () => Math.max(1, differenceInDays(safeDate(trip.endDate), safeDate(trip.startDate)) + 1),
     [trip.startDate, trip.endDate]
   );
 
@@ -373,10 +382,10 @@ export default function ItineraryViewerClient({ trip, isPublicView = false }: { 
 
   /** Compute the global Day number where each stop starts */
   const stopStartDays = useMemo(() => {
-    const tripStart = new Date(trip.startDate);
+    const tripStart = safeDate(trip.startDate);
     const map: Record<string, number> = {};
     trip.stops.forEach((s) => {
-      const dayNum = differenceInDays(new Date(s.startDate), tripStart) + 1;
+      const dayNum = differenceInDays(safeDate(s.startDate), tripStart) + 1;
       map[s.id] = Math.max(1, dayNum);
     });
     return map;
@@ -405,7 +414,7 @@ export default function ItineraryViewerClient({ trip, isPublicView = false }: { 
                 <h1 className="text-xl font-bold text-gray-900 mt-0.5">{trip.title}</h1>
                 <p className="text-sm text-gray-500">
                   <Calendar className="w-3.5 h-3.5 inline mr-1" />
-                  {format(new Date(trip.startDate), "MMM dd")} – {format(new Date(trip.endDate), "MMM dd, yyyy")}
+                  {format(safeDate(trip.startDate), "MMM dd")} – {format(safeDate(trip.endDate), "MMM dd, yyyy")}
                   <span className="mx-2 opacity-40">·</span>
                   {totalDays} day{totalDays !== 1 ? "s" : ""}
                 </p>
@@ -497,7 +506,7 @@ export default function ItineraryViewerClient({ trip, isPublicView = false }: { 
         <aside className="w-64 shrink-0 space-y-3 sticky top-6 self-start hidden lg:block">
           <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1 mb-4">Stops</h2>
           {trip.stops.map((stop) => {
-            const nights = differenceInDays(new Date(stop.endDate), new Date(stop.startDate));
+            const nights = differenceInDays(safeDate(stop.endDate), safeDate(stop.startDate));
             const isSelected = stop.id === selectedStopId;
             const acts = stop.activities.length;
             const globalDay = stopStartDays[stop.id] ?? 1;
